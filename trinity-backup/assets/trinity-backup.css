@@ -1,0 +1,411 @@
+.trinity-backup {
+  max-width: 900px;
+}
+
+.trinity-backup__panel {
+  background: #fff;
+  border: 1px solid #dcdcde;
+  border-radius: 6px;
+  padding: 20px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.trinity-backup__panel + .trinity-backup__panel {
+  margin-top: 16px;
+}
+
+.trinity-backup__panel h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+#trinity-backup-import-start {
+  margin-top: 15px;
+}
+
+.button.button-small.button-primary.trinity-restore-backup { 
+  margin-bottom: 4px; 
+}
+
+/* Feedback block (status + progress + log) */
+.trinity-backup__feedback {
+  margin-top: 15px;
+}
+
+.trinity-backup__status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.trinity-backup__status-row .spinner {
+  float: none;
+  margin: 0;
+}
+
+.trinity-backup__status {
+  font-weight: 600;
+}
+
+.trinity-backup__progress {
+  background: #f0f0f1;
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.trinity-backup__progress-bar {
+  background: #2271b1;
+  height: 100%;
+  width: 0;
+  transition: width 0.3s ease;
+}
+
+.trinity-backup__log {
+  background: #f6f7f7;
+  border: 1px dashed #c3c4c7;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+#trinity-backup-download {
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+/* Drag & Drop Zone */
+.trinity-backup__dropzone {
+  border: 2px dashed #c3c4c7;
+  border-radius: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #fafafa;
+  position: relative;
+}
+
+.trinity-backup__dropzone:hover {
+  border-color: #2271b1;
+  background: #f0f7fc;
+}
+
+.trinity-backup__dropzone.drag-over {
+  border-color: #2271b1;
+  background: #e5f3ff;
+  border-style: solid;
+}
+
+.trinity-backup__dropzone.has-file {
+  border-color: #00a32a;
+  background: #f0fff0;
+  border-style: solid;
+}
+
+.trinity-backup__dropzone input[type="file"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.trinity-backup__dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.trinity-backup__dropzone-icon {
+  font-size: 48px;
+  line-height: 1;
+}
+
+.trinity-backup__dropzone-text {
+  color: #646970;
+  font-size: 14px;
+}
+
+.trinity-backup__dropzone.has-file .trinity-backup__dropzone-text {
+  color: #1d2327;
+}
+
+.trinity-backup__dropzone-filename {
+  font-weight: 600;
+  color: #1d2327;
+  margin-top: 5px;
+}
+
+/* Export Options */
+.trinity-backup__options {
+  margin: 15px 0;
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 4px;
+}
+
+.trinity-backup__options-title {
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.trinity-backup__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.trinity-backup__option:last-child {
+  margin-bottom: 0;
+}
+
+.trinity-backup__option label {
+  cursor: pointer;
+}
+
+.trinity-backup__option input[type="text"],
+.trinity-backup__option input[type="password"] {
+  width: 200px;
+}
+
+.trinity-backup__options-row {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.trinity-backup__options-col {
+  flex: 1;
+  min-width: 250px;
+}
+
+/* URL Replacement Section */
+.trinity-backup__url-replace {
+  margin-top: 15px;
+  padding: 15px;
+  background: #fff8e5;
+  border: 1px solid #f0c36d;
+  border-radius: 4px;
+}
+
+.trinity-backup__url-replace-title {
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: block;
+  color: #826200;
+}
+
+.trinity-backup__url-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.trinity-backup__url-row label {
+  min-width: 60px;
+}
+
+.trinity-backup__url-row input[type="url"] {
+  flex: 1;
+  min-width: 200px;
+  max-width: 300px;
+}
+
+/* Backups List */
+.trinity-backup__list {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.trinity-backup__list th,
+.trinity-backup__list td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.trinity-backup__list th {
+  background: #f9f9f9;
+  font-weight: 600;
+}
+
+/* Column sizing: keep Filename from taking over the table */
+.trinity-backup__list th:nth-child(1),
+.trinity-backup__list td:nth-child(1) {
+  width: 34%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trinity-backup__list th:nth-child(2),
+.trinity-backup__list td:nth-child(2) {
+  width: 12%;
+}
+
+.trinity-backup__list th:nth-child(3),
+.trinity-backup__list td:nth-child(3) {
+  width: 18%;
+}
+
+.trinity-backup__list th:nth-child(4),
+.trinity-backup__list td:nth-child(4) {
+  width: 12%;
+}
+
+.trinity-backup__list th:nth-child(5),
+.trinity-backup__list td:nth-child(5) {
+  width: 24%;
+}
+
+.trinity-backup__list-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+/* Danger button */
+.trinity-backup__btn-danger {
+  color: #d63638 !important;
+  border-color: #d63638 !important;
+}
+
+.trinity-backup__btn-danger:hover {
+  background: #d63638 !important;
+  color: #fff !important;
+}
+
+/* Confirmation Modal */
+.trinity-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+}
+
+.trinity-modal-content {
+  background: #fff;
+  padding: 25px;
+  border-radius: 8px;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.trinity-modal-content h3 {
+  margin-top: 0;
+  color: #d63638;
+}
+
+.trinity-modal-content ul {
+  padding-left: 20px;
+  margin: 15px 0;
+  list-style: disc;
+}
+
+.trinity-modal-content li {
+  margin-bottom: 5px;
+}
+
+.trinity-modal-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* Scheduled Backups */
+.trinity-backup__schedule {
+  margin-top: 15px;
+}
+
+.trinity-backup__schedule-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.trinity-backup__schedule-row label {
+  font-weight: 500;
+  min-width: 80px;
+}
+
+.trinity-backup__schedule-row select {
+  min-width: 150px;
+}
+
+.trinity-backup__schedule-row .description {
+  color: #646970;
+  font-size: 13px;
+}
+
+.trinity-backup__schedule-info {
+  border-radius: 4px;
+}
+
+.trinity-backup__schedule-info strong {
+  color: #1d2327;
+}
+
+#trinity-schedule-status {
+  font-weight: 500;
+  transition: opacity 0.3s ease;
+}
+
+/* Cloud Settings */
+.trinity-backup__cloud-providers {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+
+.trinity-backup__cloud-card {
+  border: 1px solid #dcdcde;
+  border-radius: 6px;
+  padding: 15px;
+  min-width: 200px;
+  flex: 1;
+  max-width: 300px;
+}
+
+.trinity-backup__cloud-card h4 {
+  margin: 0 0 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trinity-backup__cloud-card.connected {
+  border-color: #00a32a;
+  background: #f0fff0;
+}
+
+.trinity-backup__cloud-status {
+  font-size: 12px;
+  color: #757575;
+  margin-bottom: 10px;
+}
