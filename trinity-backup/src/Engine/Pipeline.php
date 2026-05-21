@@ -9,6 +9,7 @@ if (!\defined('ABSPATH')) {
 }
 
 use TrinityBackup\Core\StateManager;
+use TrinityBackup\Core\StorageSecurity;
 use TrinityBackup\Engine\Steps\ExportDatabase;
 use TrinityBackup\Engine\Steps\ExportFiles;
 use TrinityBackup\Filesystem\FilesystemInterface;
@@ -53,7 +54,8 @@ final class Pipeline
 
         $jobId = $this->stateManager->create();
         $uploads = wp_upload_dir();
-        $baseDir = trailingslashit($uploads['basedir']) . 'trinity-backup/' . $jobId;
+        $backupBaseDir = StorageSecurity::ensureBaseDirectory();
+        $baseDir = StorageSecurity::ensureJobDirectory($jobId);
         $this->filesystem->ensureDir($baseDir);
 
         // Write simple metadata to identify how this backup was created.
@@ -75,7 +77,7 @@ final class Pipeline
         $archivePath = $baseDir . '/' . $jobId . '.trinity';
         
         // Build exclude directories based on options
-        $excludeDirs = [trailingslashit($uploads['basedir']) . 'trinity-backup'];
+        $excludeDirs = [$backupBaseDir];
         
         if (!empty($options['no_media'])) {
             $excludeDirs[] = trailingslashit($uploads['basedir']);
@@ -175,8 +177,8 @@ final class Pipeline
 
     private function buildDoneResponse(array $state): array
     {
-        $uploads = wp_upload_dir();
-        $downloadUrl = trailingslashit($uploads['baseurl']) . 'trinity-backup/' . $state['job_id'] . '/' . $state['job_id'] . '.trinity';
+        $this->cleanupTemporaryArtifacts($state);
+        $downloadUrl = StorageSecurity::buildDownloadUrl((string) $state['job_id']);
 
         return [
             'status' => 'done',
@@ -186,6 +188,15 @@ final class Pipeline
             'message' => 'Export complete.',
             'stats' => $state['stats'],
         ];
+    }
+
+    private function cleanupTemporaryArtifacts(array $state): void
+    {
+        foreach (['db_path', 'manifest_path'] as $key) {
+            if (!empty($state[$key]) && is_string($state[$key])) {
+                StorageSecurity::deleteFileInsideBase($state[$key]);
+            }
+        }
     }
 
     private function getTimeLimit(): int

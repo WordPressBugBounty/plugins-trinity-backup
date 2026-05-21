@@ -17,8 +17,7 @@ final class BackupManager
 
     public function __construct()
     {
-        $uploads = wp_upload_dir();
-        $this->backupDir = trailingslashit($uploads['basedir']) . 'trinity-backup';
+        $this->backupDir = StorageSecurity::ensureBaseDirectory();
     }
 
     /**
@@ -32,8 +31,6 @@ final class BackupManager
         if (!is_dir($this->backupDir)) {
             return $backups;
         }
-
-        $uploads = wp_upload_dir();
 
         // Find backups in subdirectories (domain-date-time-random)
         $dirs = glob($this->backupDir . '/*', GLOB_ONLYDIR);
@@ -69,7 +66,7 @@ final class BackupManager
                     'filename' => $backupId . '.trinity',
                     'size' => filesize($trinityPath) ?: 0,
                     'created' => filemtime($trinityPath) ?: 0,
-                    'url' => trailingslashit($uploads['baseurl']) . 'trinity-backup/' . $backupId . '/' . basename($trinityPath),
+                    'url' => StorageSecurity::buildDownloadUrl($backupId),
                     'path' => $trinityPath,
                     'origin' => $origin,
                 ];
@@ -101,7 +98,7 @@ final class BackupManager
                     'filename' => $filename,
                     'size' => filesize($trinityPath) ?: 0,
                     'created' => filemtime($trinityPath) ?: 0,
-                    'url' => trailingslashit($uploads['baseurl']) . 'trinity-backup/' . $filename,
+                    'url' => StorageSecurity::buildDownloadUrl($id),
                     'path' => $trinityPath,
                     'origin' => $origin,
                 ];
@@ -162,6 +159,38 @@ final class BackupManager
         }
 
         return false;
+    }
+
+    public function resolveBackupPath(string $identifier): ?string
+    {
+        $identifier = sanitize_file_name($identifier);
+
+        if ($identifier === '' || str_contains($identifier, '..') || str_contains($identifier, '/')) {
+            return null;
+        }
+
+        $candidates = [];
+        if (str_ends_with($identifier, '.trinity')) {
+            $candidates[] = $this->backupDir . '/' . $identifier;
+        }
+
+        $backupId = preg_replace('/\.trinity$/', '', $identifier);
+        if (!is_string($backupId) || $backupId === '') {
+            return null;
+        }
+
+        $candidates[] = $this->backupDir . '/' . $backupId . '/' . $backupId . '.trinity';
+        $candidates[] = $this->backupDir . '/' . $backupId . '/backup.trinity';
+        $candidates[] = $this->backupDir . '/' . (str_starts_with($backupId, 'job_') ? $backupId : ('job_' . $backupId)) . '/backup.trinity';
+        $candidates[] = $this->backupDir . '/' . $backupId . '.trinity';
+
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate) && StorageSecurity::isPathInsideBase($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -1,7 +1,7 @@
 (() => {
   // === THEME SWITCHER ===
   const themeSwitcher = document.querySelector('.trinity-theme-switcher');
-  const trinityBackup = document.querySelector('.trinity-backup');
+  const trinityBackup = document.querySelector('.trinity-backup.trinity-modern[data-theme]');
   const prefersDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
   let prefersListenerBound = false;
   
@@ -15,12 +15,10 @@
   };
 
   const setBodyThemeClass = (selectedTheme) => {
-    const effective = selectedTheme === 'auto'
-      ? (prefersDark && prefersDark.matches ? 'dark' : 'light')
-      : selectedTheme;
+    const theme = selectedTheme === 'dark' || selectedTheme === 'light' ? selectedTheme : 'auto';
 
-    document.body.classList.remove('trinity-theme-light', 'trinity-theme-dark');
-    document.body.classList.add(effective === 'dark' ? 'trinity-theme-dark' : 'trinity-theme-light');
+    document.body.classList.remove('trinity-theme-light', 'trinity-theme-dark', 'trinity-theme-auto');
+    document.body.classList.add(`trinity-theme-${theme}`);
   };
 
   const bindPrefersListenerIfNeeded = () => {
@@ -68,13 +66,8 @@
       
       const theme = btn.dataset.theme;
       
-      // Update all instances to ensure everything is covered
-      const allBackups = document.querySelectorAll('.trinity-backup');
-      allBackups.forEach(el => el.setAttribute('data-theme', theme));
-      
-      // Fallback if no container found or just body needed
-      if (allBackups.length === 0 && trinityBackup) {
-          trinityBackup.setAttribute('data-theme', theme);
+      if (trinityBackup) {
+        trinityBackup.setAttribute('data-theme', theme);
       }
 
       setBodyThemeClass(theme);

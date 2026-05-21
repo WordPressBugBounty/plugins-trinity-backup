@@ -2,8 +2,8 @@
 Contributors: kingaddons, alxrlov, olgadev
 Tags: backup, migration, restore, clone, duplicate
 Requires at least: 6.2
-Tested up to: 6.9
-Stable tag: 2.0.9
+Tested up to: 7.0
+Stable tag: 2.0.10
 Requires PHP: 8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -261,6 +261,12 @@ Trinity Backup is compatible with WordPress Multisite installations.
 8. White label — rebrand the plugin for client sites
 
 == Changelog ==
+
+= 2.0.10 - May 20, 2026 =
+* Improved Security: Block direct web access to backup storage and serve backup downloads through authenticated WordPress requests
+* Improved Security: Remove public job marker files and move restore state files into protected storage
+* Improved Security: Delete temporary database and manifest files after completed backup and restore jobs
+* Improved Security: Exclude transient Trinity Backup job state from database exports
 
 = 2.0.9 - Mar 9, 2026 =
 * Added option to preserve email addresses during migration instead of replacing them

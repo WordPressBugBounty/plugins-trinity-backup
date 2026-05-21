@@ -157,6 +157,15 @@ final class ExportDatabase
         $escapedTable = str_replace('`', '``', $table);
         
         // Фильтрация спам-комментариев
+        if ($table === $wpdb->options) {
+            return sprintf(
+                "SELECT * FROM `%s` WHERE option_name != 'trinity_backup_current_job' AND LEFT(option_name, 21) != 'trinity_backup_state_' LIMIT %d, %d",
+                $escapedTable,
+                $offset,
+                $limit
+            );
+        }
+
         if ($noSpam && $table === $wpdb->comments) {
             return sprintf(
                 "SELECT * FROM `%s` WHERE comment_approved != 'spam' LIMIT %d, %d",

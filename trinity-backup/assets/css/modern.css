@@ -123,23 +123,14 @@
     }
 }
 
-/* Dark theme body background */
-.trinity-backup[data-theme="dark"] ~ #wpfooter,
-body:has(.trinity-backup[data-theme="dark"]) {
-    background: #000 !important;
-}
-
-/* Fallback for browsers that don't reliably re-evaluate :has() on attribute changes */
 body.trinity-theme-dark,
 body.trinity-theme-dark #wpfooter {
     background: #000 !important;
 }
 
 @media (prefers-color-scheme: dark) {
-    body:has(.trinity-backup[data-theme="auto"]) {
-        background: #000 !important;
-    }
-    .trinity-backup[data-theme="auto"] ~ #wpfooter {
+    body.trinity-theme-auto,
+    body.trinity-theme-auto #wpfooter {
         background: #000 !important;
     }
 }

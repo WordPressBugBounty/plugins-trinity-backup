@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Trinity Backup - Backup, Migrate, Restore, Clone & Schedule Backups
  * Description: Lightweight backup and migration plugin with chunked processing, streaming archives, and optional AES-256 encryption. Create full site backups, migrate between servers, and restore with ease.
- * Version: 2.0.9
+ * Version: 2.0.10
  * Author: KingAddons.com
  * Author URI: https://trinity.kingaddons.com
  * License: GPLv2 or later
@@ -153,5 +153,7 @@ if ( ! function_exists( 'trinity_backup_has_feature' ) ) {
 
 require_once __DIR__ . '/src/Core/Autoloader.php';
 \TrinityBackup\Core\Autoloader::register();
+
+register_activation_hook(__FILE__, [\TrinityBackup\Core\StorageSecurity::class, 'install']);
 
 \TrinityBackup\Core\Plugin::init();

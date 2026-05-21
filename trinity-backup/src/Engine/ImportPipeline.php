@@ -11,6 +11,7 @@ if (!\defined('ABSPATH')) {
 use RuntimeException;
 use TrinityBackup\Archiver\TrinityExtractor;
 use TrinityBackup\Core\StateManager;
+use TrinityBackup\Core\StorageSecurity;
 use TrinityBackup\Engine\Steps\ImportDatabase;
 use TrinityBackup\Engine\Steps\ImportFiles;
 use TrinityBackup\Filesystem\FilesystemInterface;
@@ -56,8 +57,7 @@ final class ImportPipeline
         
         // If archive is in a job folder, use it; otherwise create temp folder
         if (!str_contains($archiveDir, 'trinity-backup/job_')) {
-            $uploads = wp_upload_dir();
-            $baseDir = trailingslashit($uploads['basedir']) . 'trinity-backup/' . $jobId;
+            $baseDir = StorageSecurity::ensureJobDirectory($jobId);
             $this->filesystem->ensureDir($baseDir);
         }
 
@@ -171,6 +171,8 @@ final class ImportPipeline
 
     private function buildDoneResponse(array $state): array
     {
+        $this->cleanupTemporaryArtifacts($state);
+
         $response = [
             'status' => 'done',
             'stage' => 'done',
@@ -187,6 +189,15 @@ final class ImportPipeline
         }
         
         return $response;
+    }
+
+    private function cleanupTemporaryArtifacts(array $state): void
+    {
+        foreach (['db_path', 'manifest_path'] as $key) {
+            if (!empty($state[$key]) && is_string($state[$key])) {
+                StorageSecurity::deleteFileInsideBase($state[$key]);
+            }
+        }
     }
 
     private function getTimeLimit(): int

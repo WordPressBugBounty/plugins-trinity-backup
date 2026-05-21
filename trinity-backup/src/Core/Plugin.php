@@ -22,7 +22,7 @@ use TrinityBackup\Filesystem\Drivers\LocalDriver;
 
 final class Plugin
 {
-    public const VERSION = '2.0.9';
+    public const VERSION = '2.0.10';
 
     public static function init(): void
     {
@@ -66,6 +66,12 @@ final class Plugin
         $router = new Router($container->get('pipeline'), $container->get('import_pipeline'));
         $router->register();
 
+        try {
+            StorageSecurity::install();
+        } catch (\Throwable) {
+            // Backup and restore requests surface storage errors when they need the directory.
+        }
+
         // Pro features — only register if licensed
         $canUsePro = function_exists('trinity_backup_can_use_pro') && trinity_backup_can_use_pro();
         $hasFeature = static fn(string $f): bool => function_exists('trinity_backup_has_feature') && trinity_backup_has_feature($f);
@@ -92,6 +98,7 @@ final class Plugin
 
         add_action('admin_menu', [$this, 'registerAdminMenu']);
         add_action('admin_enqueue_scripts', [$this, 'enqueueAssets']);
+        add_filter('admin_body_class', [$this, 'filterAdminBodyClass']);
     }
 
     public function registerAdminMenu(): void
@@ -178,18 +185,46 @@ final class Plugin
         echo '</div>';
     }
 
+    public function filterAdminBodyClass(string $classes): string
+    {
+        $page = isset($_GET['page']) ? sanitize_key(wp_unslash((string) $_GET['page'])) : '';
+        if ($page !== 'trinity-backup') {
+            return $classes;
+        }
+
+        $themeClass = 'trinity-theme-' . $this->getSavedTheme();
+        $classes = trim($classes);
+
+        if ($classes === '') {
+            return $themeClass;
+        }
+
+        if (str_contains(' ' . $classes . ' ', ' ' . $themeClass . ' ')) {
+            return $classes;
+        }
+
+        return $classes . ' ' . $themeClass;
+    }
+
+    private function getSavedTheme(): string
+    {
+        $userId = get_current_user_id();
+        $savedTheme = get_user_meta($userId, 'trinity_backup_theme', true);
+
+        if (!in_array($savedTheme, ['light', 'dark', 'auto'], true)) {
+            return 'auto';
+        }
+
+        return $savedTheme;
+    }
+
     public function renderAdminPage(): void
     {
         $currentUrl = home_url('/');
         $pluginFile = dirname(__DIR__, 2) . '/trinity-backup.php';
         $imgUrl = plugin_dir_url($pluginFile) . 'assets/img/';
-        
-        // Read theme from user meta
-        $userId = get_current_user_id();
-        $savedTheme = get_user_meta($userId, 'trinity_backup_theme', true);
-        if (!in_array($savedTheme, ['light', 'dark', 'auto'], true)) {
-            $savedTheme = 'auto';
-        }
+
+        $savedTheme = $this->getSavedTheme();
         
         echo '<div class="wrap">';
         echo '<h1 style="display:none;"></h1>'; // Catches all WP admin notices above our UI

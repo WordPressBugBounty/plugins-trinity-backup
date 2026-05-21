@@ -185,17 +185,14 @@ final class CompatibilityChecker
      */
     private function checkWritePermissions(): void
     {
-        $uploads = wp_upload_dir();
-        $testDir = trailingslashit($uploads['basedir']) . 'trinity-backup';
-
-        if (!is_dir($testDir)) {
-            if (!wp_mkdir_p($testDir)) {
-                $this->checks['write_permissions'] = [
-                    'status' => 'error',
-                    'message' => 'Cannot create backup directory',
-                ];
-                return;
-            }
+        try {
+            $testDir = StorageSecurity::ensureBaseDirectory();
+        } catch (\Throwable) {
+            $this->checks['write_permissions'] = [
+                'status' => 'error',
+                'message' => 'Cannot create backup directory',
+            ];
+            return;
         }
 
         $testFile = $testDir . '/.write-test-' . time();

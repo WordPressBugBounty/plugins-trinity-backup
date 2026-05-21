@@ -2,8 +2,8 @@
 /**
  * Operation lock to prevent concurrent destructive operations.
  *
- * Stored in uploads/trinity-backup as a small JSON file so it survives
- * database replacement during restore (import).
+ * Stored in the protected Trinity Backup state directory so it survives
+ * database replacement during restore (import) without being web-readable.
  */
 
 declare(strict_types=1);
@@ -233,13 +233,7 @@ final class OperationLock
 
     private function getLockPath(): string
     {
-        $uploads = wp_upload_dir();
-        $dir = trailingslashit($uploads['basedir']) . 'trinity-backup';
-        if (!is_dir($dir)) {
-            wp_mkdir_p($dir);
-        }
-
-        return $dir . '/' . self::LOCK_FILE;
+        return StorageSecurity::getStateDir() . '/' . self::LOCK_FILE;
     }
 
     private function readFromHandle($handle): mixed

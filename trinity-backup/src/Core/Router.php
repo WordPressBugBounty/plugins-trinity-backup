@@ -41,6 +41,7 @@ final class Router
         
         // Backups management
         add_action('wp_ajax_trinity_backup_list_backups', [$this, 'handleListBackups']);
+        add_action('wp_ajax_trinity_backup_download', [$this, 'handleDownloadBackup']);
         add_action('wp_ajax_trinity_backup_delete', [$this, 'handleDeleteBackup']);
         add_action('wp_ajax_trinity_backup_delete_all', [$this, 'handleDeleteAllBackups']);
         add_action('wp_ajax_trinity_backup_cleanup', [$this, 'handleCleanup']);
@@ -204,6 +205,7 @@ final class Router
                 if ($token !== '') {
                     $lock->release($token);
                 }
+                $stateManager->forget($jobId);
             }
             wp_send_json($response);
         } catch (\Throwable $throwable) {
@@ -232,6 +234,7 @@ final class Router
             if ($token !== '') {
                 $lock->release($token);
             }
+            $stateManager->forget($jobId);
             wp_send_json_error(['message' => $throwable->getMessage()]);
         }
     }
@@ -267,10 +270,30 @@ final class Router
             wp_send_json_error(['message' => $uploaded['error'] ?? 'Upload failed.']);
         }
 
+        $uploadedPath = isset($uploaded['file']) ? (string) $uploaded['file'] : '';
+        if ($uploadedPath === '' || !is_file($uploadedPath)) {
+            wp_send_json_error(['message' => 'Upload failed.']);
+        }
+
+        $stateManager = new StateManager();
+        $backupId = $stateManager->generateBackupName();
+        $jobDir = StorageSecurity::ensureJobDirectory($backupId);
+        $finalPath = $jobDir . '/' . $backupId . '.trinity';
+
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rename -- Moving plugin-owned uploaded archive into protected storage.
+        if (!@rename($uploadedPath, $finalPath)) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- Moving plugin-owned uploaded archive into protected storage.
+            if (!@copy($uploadedPath, $finalPath)) {
+                wp_delete_file($uploadedPath);
+                wp_send_json_error(['message' => 'Failed to move uploaded archive into protected storage.']);
+            }
+            wp_delete_file($uploadedPath);
+        }
+
         wp_send_json([
             'status' => 'ok',
-            'path' => $uploaded['file'],
-            'url' => $uploaded['url'],
+            'path' => $finalPath,
+            'url' => StorageSecurity::buildDownloadUrl($backupId),
         ]);
     }
 
@@ -306,12 +329,7 @@ final class Router
         }
 
         // Create upload directory
-        $uploads = wp_upload_dir();
-        $uploadDir = trailingslashit($uploads['basedir']) . 'trinity-backup/uploads/' . $uploadId;
-        
-        if (!is_dir($uploadDir)) {
-            wp_mkdir_p($uploadDir);
-        }
+        $uploadDir = StorageSecurity::ensureUploadDirectory($uploadId);
 
         // Save chunk
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.InputNotValidated,WordPress.Security.NonceVerification.Missing -- tmp_name is validated by PHP upload mechanism, nonce verified in assertNonce()
@@ -355,11 +373,7 @@ final class Router
         // All chunks uploaded - combine them into a folder
         $stateManager = new StateManager();
         $backupId = $stateManager->generateBackupName();
-        $jobDir = trailingslashit($uploads['basedir']) . 'trinity-backup/' . $backupId;
-        
-        if (!is_dir($jobDir)) {
-            wp_mkdir_p($jobDir);
-        }
+        $jobDir = StorageSecurity::ensureJobDirectory($backupId);
         
         $finalPath = $jobDir . '/' . $backupId . '.trinity';
 
@@ -389,7 +403,7 @@ final class Router
         wp_send_json([
             'status' => 'ok',
             'path' => $finalPath,
-            'url' => trailingslashit($uploads['baseurl']) . 'trinity-backup/' . $backupId . '/' . $backupId . '.trinity',
+            'url' => StorageSecurity::buildDownloadUrl($backupId),
         ]);
     }
 
@@ -624,6 +638,7 @@ final class Router
                 if ($token !== '') {
                     $lock->release($token);
                 }
+                $stateManager->forget($jobId);
             }
             wp_send_json($response);
         } catch (\Throwable $throwable) {
@@ -652,6 +667,7 @@ final class Router
             if ($token !== '') {
                 $lock->release($token);
             }
+            $stateManager->forget($jobId);
             wp_send_json_error(['message' => $throwable->getMessage()]);
         }
     }
@@ -695,6 +711,63 @@ final class Router
         } catch (\Throwable $throwable) {
             wp_send_json_error(['message' => $throwable->getMessage()]);
         }
+    }
+
+    public function handleDownloadBackup(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die('Insufficient permissions.', '', ['response' => 403]);
+        }
+
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Download nonce is verified below.
+        $backupId = isset($_GET['backup']) ? sanitize_file_name(wp_unslash((string) $_GET['backup'])) : '';
+        if ($backupId === '') {
+            wp_die('Missing backup id.', '', ['response' => 400]);
+        }
+
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce is sanitized and verified here.
+        $nonce = isset($_GET['nonce']) ? sanitize_text_field(wp_unslash((string) $_GET['nonce'])) : '';
+        if (!wp_verify_nonce($nonce, 'trinity_backup_download_' . $backupId)) {
+            wp_die('Invalid download link.', '', ['response' => 403]);
+        }
+
+        $manager = new BackupManager();
+        $path = $manager->resolveBackupPath($backupId);
+        if ($path === null || !is_file($path)) {
+            wp_die('Backup not found.', '', ['response' => 404]);
+        }
+
+        $filename = str_replace('"', '', basename($path));
+        $size = filesize($path);
+        if ($size === false) {
+            wp_die('Unable to read backup file.', '', ['response' => 500]);
+        }
+
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        nocache_headers();
+        header('X-Content-Type-Options: nosniff');
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="' . $filename . '"; filename*=UTF-8\'\'' . rawurlencode($filename));
+        header('Content-Length: ' . (string) $size);
+
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Streaming large backup download.
+        $handle = fopen($path, 'rb');
+        if ($handle === false) {
+            exit;
+        }
+
+        while (!feof($handle)) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Streaming large backup download.
+            echo fread($handle, 1048576);
+            flush();
+        }
+
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing streamed download handle.
+        fclose($handle);
+        exit;
     }
 
     public function handleDeleteBackup(): void
@@ -1017,13 +1090,15 @@ final class Router
 
     private function isAllowedArchive(string $archivePath): bool
     {
-        $uploads = wp_upload_dir();
-        $base = realpath($uploads['basedir']);
+        $base = realpath(StorageSecurity::ensureBaseDirectory());
         $path = realpath($archivePath);
 
         if ($base === false || $path === false) {
             return false;
         }
+
+        $base = rtrim(str_replace('\\', '/', $base), '/') . '/';
+        $path = str_replace('\\', '/', $path);
 
         return str_starts_with($path, $base);
     }
